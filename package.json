@@ -1,0 +1,22 @@
+{
+  "name": "encrypted_message",
+  "version": "1.0.0",
+  "description": "encrypted and decrypted message",
+  "main": "index.js",
+  "scripts": {
+    "test": "echo \"Error: no test specified\" && exit 1"
+  },
+  "repository": {
+    "type": "git",
+    "url": "git+https://github.com/yadavsatyapal1999/encrypted_message.git"
+  },
+  "author": "Satyapal Yadav",
+  "license": "ISC",
+  "bugs": {
+    "url": "https://github.com/yadavsatyapal1999/encrypted_message/issues"
+  },
+  "homepage": "https://github.com/yadavsatyapal1999/encrypted_message#readme",
+  "dependencies": {
+    "express": "^4.18.2"
+  }
+}
