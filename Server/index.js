@@ -3,10 +3,12 @@ const cors = require('cors');
 const http = require('http');
 const { Server } = require('socket.io');
 const app = express();
+
 const mongoose = require('mongoose');
 const crypto = require('crypto-js');
-const schedule = require('node-schedule');
-const User  = require('./Schema')
+const User = require('./Schema');
+const userRouter = require('./getpost');
+
 require('dotenv').config();
 
 app.use(cors());
@@ -18,28 +20,28 @@ const io = new Server(server, {
         origin: "http://localhost:3000",
         method: ["GET", "POST"]
     }
-})
+});
 
-mongoose.connect(process.env.MONGO_DB ,{ useNewUrlParser: true, useUnifiedTopology: true }).then(() => {
-    console.log("connected to DB")
-})
-
-
-
+mongoose.connect(process.env.MONGO_DB, { useNewUrlParser: true, useUnifiedTopology: true }).then(() => {
+    console.log("Connected to DB");
+}).catch(error => {
+    console.error("DB connection error:", error);
+});
 
 function decrypt(cipherText, key, iv) {
     const decryptedBytes = crypto.AES.decrypt(cipherText, key, { iv: iv });
     return decryptedBytes.toString(crypto.enc.Utf8);
 }
 
-let message =[]
+let message = [];
 
 io.on('connection', (socket) => {
+    let saveDataTimeout;
 
     socket.on('data', data => {
-        console.log("data");
+        console.log("Received data:");
+
         for (let i = 0; i < data.length; i++) {
-            
             let name = decrypt(data[i].name, process.env.security_key, 15);
             let origin = decrypt(data[i].origin, process.env.security_key, 15);
             let destination = decrypt(data[i].destination, process.env.security_key, 15);
@@ -48,51 +50,50 @@ io.on('connection', (socket) => {
                 name: name,
                 origin: origin,
                 destination: destination
+            });
+        }
+    });
+
+    function saveData() {
+        console.log("save data called")
+        if (message.length === 0) {
+            console.log('No data to save.');
+            return;
+        }
+
+        const newdata = new User({
+            data: message,
+            timestamp: new Date()
+        });
+
+        newdata.save()
+            .then(savedUsers => {
+                console.log('Data saved:');
+                socket.emit("post", 'data saved');
             })
-            
-         
-        }
+            .catch(error => {
+                console.error('Error saving users:', error);
+            });
 
-       
+        message = []; // Clear the accumulated data
+
+        // Schedule the next execution of saveData after 60 seconds
+        saveDataTimeout = setInterval(saveData, 60000);
+
         
+    }
 
-        // Function to save data every 60 seconds
-        function saveData() {
-            if (message.length === 0) {
-                console.log('No data to save.');
-                return;
-            }
-        
-            const usersToSave = message.map(userData => new User(userData));
-        
-            User.insertMany(usersToSave)
-                .then(savedUsers => {
-                    console.log('Users saved:', savedUsers);
-                })
-                .catch(error => {
-                    console.error('Error saving users:', error);
-                });
-        
-                message = []; // Clear the accumulated data
-        }
-        
-        // Call the saveData function every 60 seconds
-        setInterval(saveData, 60000);
+    // Call the saveData function initially
+    saveData();
 
-// Schedule data saving after 1 minute
-// schedule.scheduleJob(new Date(Date.now() + 60000), saveDataToDB);
+    //  cleanup when the socket disconnects
+    socket.on('disconnect', () => {
+        clearInterval(saveDataTimeout); // Clear the timeout when the socket disconnects
+    });
 
-       
-       // console.log(message)
-       socket.emit('hello',message)
-    })
-    
-
-
-})
-
-
+    app.use('/', userRouter);
+});
 
 server.listen(process.env.PORT, () => {
-    console.log("server is live")
-})
+    console.log("Server is live");
+});

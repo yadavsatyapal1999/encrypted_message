@@ -1,6 +1,8 @@
 
 import { useEffect } from "react";
 import { io } from "socket.io-client";
+import axios from 'axios';
+
 const crypto = require('crypto-js')
 
 const data = require('./data.json');
@@ -19,15 +21,31 @@ function random() {
     return [nameindex, originindex, destinationindex]
 }
 
-export default function Listener() {
+export default function Listener({ SetPost }) {
 
     useEffect(() => {
         sendmessage()
-    }, [])
+    }, []);
+
+    async function getData() {
+        try {
+            const response = await axios.get('http://localhost:8080/getpost');
+            console.log("response")
+            console.log(response.data);
+           // SetPost(response.data); 
+        } catch (err) {
+            console.log(err);
+        }
+    }
+
 
     const socket = io('http://localhost:8080');
     socket.on('connection', () => {
         console.log("connected")
+    })
+    socket.on('post', () => {
+        getData();
+       // console.log("postdata")
     })
 
     let message = [];
@@ -51,16 +69,16 @@ export default function Listener() {
 
     function sendmessage() {
         const message = generatemessage();
-        console.log(message)
+       // console.log(message)
         socket.emit('data', message)
         console.log("message sent")
-        setTimeout(sendmessage, 10000)
-        
-        
+        setTimeout(sendmessage, 30000)
+
+
     }
 
-    socket.on('hello', res => {
-        console.log(res)
-    })
+    /* socket.on('hello', res => {
+         console.log(res)
+     })*/
 
 }
