@@ -29,10 +29,18 @@ export default function Listener({ SetPost }) {
 
     async function getData() {
         try {
-            const response = await axios.get('http://localhost:8080/getpost');
-            console.log("response")
-            console.log(response.data);
-           // SetPost(response.data); 
+            let response = await axios.get('http://localhost:8080/getpost')
+            if (response) {
+                console.log("response")
+                //console.log(response.data)
+                SetPost(response.data);
+            }
+            else {
+                console.log("could not get response")
+            }
+
+            // console.log(response.data.data);
+
         } catch (err) {
             console.log(err);
         }
@@ -43,9 +51,10 @@ export default function Listener({ SetPost }) {
     socket.on('connection', () => {
         console.log("connected")
     })
-    socket.on('post', () => {
+    socket.on('post', (res) => {
+        console.log("saved data")
         getData();
-       // console.log("postdata")
+        // console.log("postdata")
     })
 
     let message = [];
@@ -68,17 +77,17 @@ export default function Listener({ SetPost }) {
     }
 
     function sendmessage() {
-        const message = generatemessage();
-       // console.log(message)
-        socket.emit('data', message)
+        const mess = generatemessage();
+    
+        // console.log(message)
+        socket.emit('data', mess)
         console.log("message sent")
-        setTimeout(sendmessage, 30000)
-
-
+        setTimeout(sendmessage, 10000)
+        message.length = 0;
+        console.log(message)
+        console.log(mess)
     }
 
-    /* socket.on('hello', res => {
-         console.log(res)
-     })*/
+
 
 }

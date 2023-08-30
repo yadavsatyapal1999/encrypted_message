@@ -7,9 +7,10 @@ const app = express();
 const mongoose = require('mongoose');
 const crypto = require('crypto-js');
 const User = require('./Schema');
-const userRouter = require('./getpost');
+const userRouter = require('./getpost')
 
 require('dotenv').config();
+
 
 app.use(cors());
 
@@ -36,8 +37,6 @@ function decrypt(cipherText, key, iv) {
 let message = [];
 
 io.on('connection', (socket) => {
-    let saveDataTimeout;
-
     socket.on('data', data => {
         console.log("Received data:");
 
@@ -54,46 +53,41 @@ io.on('connection', (socket) => {
         }
     });
 
+
     function saveData() {
-        console.log("save data called")
         if (message.length === 0) {
             console.log('No data to save.');
             return;
         }
 
-        const newdata = new User({
-            data: message,
-            timestamp: new Date()
-        });
 
+
+        const newdata = new User({
+            data:message,
+            timestamp: new Date()
+        })
         newdata.save()
             .then(savedUsers => {
                 console.log('Data saved:');
-                socket.emit("post", 'data saved');
+                
+                socket.emit("post",'data saved')
+
             })
             .catch(error => {
                 console.error('Error saving users:', error);
             });
 
         message = []; // Clear the accumulated data
-
-        // Schedule the next execution of saveData after 60 seconds
-        saveDataTimeout = setInterval(saveData, 60000);
-
-        
     }
 
-    // Call the saveData function initially
-    saveData();
-
-    //  cleanup when the socket disconnects
-    socket.on('disconnect', () => {
-        clearInterval(saveDataTimeout); // Clear the timeout when the socket disconnects
-    });
-
-    app.use('/', userRouter);
+    // Call the saveData function every 60 seconds
+    setInterval(saveData, 60000);
+   app.use('/',userRouter)
 });
 
 server.listen(process.env.PORT, () => {
     console.log("Server is live");
+    
+    // Function to save data
+    
 });
